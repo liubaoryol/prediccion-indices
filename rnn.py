@@ -9,40 +9,46 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from sklearn.preprocessing import MinMaxScaler
+
+from keras.models import Sequential #For creating an Neural Network object
+from keras.layers import Dense #adds output layer
+from keras.layers import LSTM #adds LSTM layer
+from keras.layers import Dropout
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint, TensorBoard
+
+
 # Importing the training set
 dataset_train = pd.read_csv('Google_Stock_Price_Train.csv')
+# Extracting only the "Open Value" Colunm of the Stocks
 training_set = dataset_train.iloc[:, 1:2].values
 
-# Feature Scaling: Standardisation or Normalization?
+# Feature Scaling: Standardisation or Normalization? 
 #Better normalization for RNN, specially because we have sigmoid act. f.
-from sklearn.preprocessing import MinMaxScaler
-sc = MinMaxScaler(feature_range = (0, 1)) #When is it convenient to change feature range?
+
+#Creating the scaler object
+sc = MinMaxScaler(feature_range = (0, 1)) #Q: When is it convenient to change feature range?
 training_set_scaled = sc.fit_transform(training_set)
 
-# Creating a data structure with 60 timesteps and 1 output
-#What the RNN needs to remember to predict. Very important step which if
-#not done properly can lead to overfitting or nonsense predictions
-#you can add more dimensions, with other indicators, for example other stock prices
+# Creating a data structure; how many timesteps to remember and how many days to predict into the future
 
+#What the RNN needs to remember to predict. This is a very important step which if
+#not done properly can lead to overfitting or nonsense predictions
+
+#It is possible to add more dimensions, such as other indicators: stock prices
+n_future = 1 # number of days to predict
+n_past = 60 #number past days to remember for the prediction
 X_train = []
 y_train = []
-for i in range(60, len(training_set_scaled)):
-    X_train.append(training_set_scaled[i-60:i, 0])
-    y_train.append(training_set_scaled[i, 0])
+for i in range(n_past, len(training_set_scaled)-n_future+1):
+    X_train.append(training_set_scaled[i-n_past:i, 0])
+    y_train.append(training_set_scaled[i+ n_future-1 , 0])
 X_train, y_train = np.array(X_train), np.array(y_train)
 
 # Reshaping
 X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
 
 
-
-# Part 2 - Building the RNN
-
-# Importing the Keras libraries and packages
-from keras.models import Sequential
-from keras.layers import Dense #adds output layer
-from keras.layers import LSTM
-from keras.layers import Dropout
 
 # Initialising the RNN
 regressor = Sequential()
